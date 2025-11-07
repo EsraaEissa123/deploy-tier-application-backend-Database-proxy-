@@ -1,12 +1,16 @@
-We need to build an three tier application (backend,Database,proxy) with docker principles.
-
-
-	- The backend docker file write in multi-stage approach.
-	- The database creadential is in your host machine.
-	- Make sure that proxy is up and running in https protocol and the configuration files is in your host machine.
-	- Kindly make sure that each container is in seperate network.
-	- Make sure that all project is up and down with one command.
-
-
-
-Note:You will find backend files in the same path of the project.
+🚀 Three-Tier OpenShift Web ApplicationThis repository contains the configuration files (YAML) for deploying a robust three-tier web application on an OpenShift or Kubernetes cluster. The architecture consists of a public-facing Proxy (Frontend), a business logic layer (Go Backend), and a persistent MySQL Database.🏗️ Project ArchitectureThe application is structured into three logical tiers:TierComponentImage/TechnologyPurpose1. PresentationProxy/Frontend(Image not specified)Handles incoming traffic and routes requests to the backend.2. ApplicationBackend Deployment3booda24/app-go:latestExecutes business logic and communicates with the database layer.3. DataDatabase Deploymentmysql:8.0Provides persistent storage for application data.📋 PrerequisitesBefore deployment, ensure you have the following tools and access configured:OpenShift CLI (oc): Used for interacting with the OpenShift cluster.Access to the tier-app namespace: You must be logged into the cluster and have permissions to create resources in this namespace.Persistent Volume Claim (PVC): A db-pvc must be pre-provisioned in the tier-app namespace for the database volume.⚙️ Configuration1. Secrets ManagementThe application backend requires a database password, which must be stored in an OpenShift Secret named db-secret.Secret Name: db-secretKey: db-passwordExample Creation:# Replace 'YOUR_STRONG_PASSWORD' with your actual password
+echo -n 'YOUR_STRONG_PASSWORD' | base64
+# oc create secret generic db-secret --from-literal=db-password='YOUR_STRONG_PASSWORD' -n tier-app
+2. Service Accounts and PermissionsThe database-deployment requires specific security context constraints (SCCs) to run in OpenShift due to the mysql:8.0 image's internal directory ownership checks.The tier-app-sa ServiceAccount must be used, and the Pod template includes securityContext settings to ensure stability:# Used for the Database Pod to resolve "Permission denied" errors on /var/lib/mysql
+securityContext:
+  runAsUser: 999 
+  fsGroup: 999 
+  runAsNonRoot: true
+🚀 Deployment GuideTo deploy the entire application, use the respective YAML files.1. Database DeploymentDeploys the MySQL database pod, configured to use the db-secret and the persistent volume claim (db-pvc).oc apply -f database_deployment.yaml -n tier-app
+oc rollout status deployment/database-deployment -n tier-app
+2. Backend DeploymentDeploys the Go application. This deployment fixes the common issue of mounting the secret as a file by using subPath to ensure the password file is found at the required path: /run/secrets/db-password.oc apply -f backend_deployment.yaml -n tier-app
+oc rollout status deployment/backend-deployment -n tier-app
+3. Proxy DeploymentDeploys the front-end proxy service.oc apply -f proxy_deployment.yaml -n tier-app
+oc rollout status deployment/proxy-deployment -n tier-app
+🐛 Troubleshooting Common IssuesIf a component fails with CrashLoopBackOff, check the logs and reference the common fixes below:Issue in LogsComponentCauseSolutionchown: changing ownership of '/var/lib/mysql': Permission deniedDatabaseThe MySQL entrypoint attempts to change directory ownership as root, which is blocked by OpenShift SCCs.Ensure the securityContext in database_deployment.yaml sets runAsUser: 999 and fsGroup: 999 to grant correct group ownership to the mounted volume.open /run/secrets/db-password: no such file or directoryBackendThe application cannot locate the password file at the expected path.Verify the backend_deployment.yaml uses a volume mount with subPath: db-password and mounts the volume directly to the full path: mountPath: "/run/secrets/db-password".Back-off restarting failed containerBothA general sign of repeated failure.Use oc logs <pod-name> immediately to identify the specific error (e.g., connection failure, missing file).Viewing LogsAlways use the specific pod name to view the most accurate logs:oc get pods -n tier-app   # Get the pod name
+oc logs -f <pod-name> -n tier-app
