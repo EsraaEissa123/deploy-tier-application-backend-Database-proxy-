@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "3"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"backend-deployment"},"name":"backend-deployment","namespace":"tier-app"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"backend"}},"template":{"metadata":{"labels":{"app":"backend"}},"spec":{"containers":[{"image":"3booda24/app-go:latest","imagePullPolicy":"Always","name":"backend","ports":[{"containerPort":8000}],"volumeMounts":[{"mountPath":"/run/secrets","name":"db-secret-volume"}]}],"serviceAccountName":"tier-app-sa","volumes":[{"name":"db-secret-volume","secret":{"items":[{"key":"db-password","path":"db-password"}],"secretName":"db-secret"}}]}}}}
+  creationTimestamp: "2025-11-07T16:02:17Z"
+  generation: 3
+  labels:
+    app: backend-deployment
+  name: backend-deployment
+  namespace: tier-app
+  resourceVersion: "58331"
+  uid: ca738942-2d2c-4209-bec3-c812269d39e0
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: backend
+    spec:
+      containers:
+      - image: 3booda24/app-go:latest
+        imagePullPolicy: Always
+        name: backend
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /run/secrets
+          name: db-secret-volume
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: tier-app-sa
+      serviceAccountName: tier-app-sa
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: db-secret-volume
+        secret:
+          defaultMode: 420
+          items:
+          - key: db-password
+            path: db-password
+          secretName: db-secret
+status:
+  conditions:
+  - lastTransitionTime: "2025-11-07T16:02:17Z"
+    lastUpdateTime: "2025-11-07T16:02:17Z"
+    message: Deployment does not have minimum availability.
+    reason: MinimumReplicasUnavailable
+    status: "False"
+    type: Available
+  - lastTransitionTime: "2025-11-07T17:21:04Z"
+    lastUpdateTime: "2025-11-07T17:36:53Z"
+    message: ReplicaSet "backend-deployment-5876c4c9bc" is progressing.
+    reason: ReplicaSetUpdated
+    status: "True"
+    type: Progressing
+  observedGeneration: 3
+  replicas: 3
+  unavailableReplicas: 3
+  updatedReplicas: 1

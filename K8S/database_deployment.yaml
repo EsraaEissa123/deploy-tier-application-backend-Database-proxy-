@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-deployment
+  namespace: tier-app
+  labels:
+    app: database-deployment
+spec:
+  selector:
+    matchLabels:
+      app: database
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      serviceAccountName: tier-app-sa
+      securityContext:
+        fsGroup: 1000 
+      volumes:
+      - name: db-password
+        secret:
+          secretName: db-secret
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: db-pvc
+      containers:
+      - name: database
+        image: mysql:8.0
+        imagePullPolicy: Always
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: db-password
+        - name: MYSQL_DATABASE
+          value: "example"
+        - name: MYSQL_ROOT_HOST
+          value: "%"
+        - name: MYSQL_INITDB_SKIP_TZINFO
+          value: "1"
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: db-data
+          mountPath: "/var/lib/mysql"

@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxy-deployment
+  namespace: tier-app
+  labels:
+    app: proxy-deployment
+spec:
+  selector:
+    matchLabels:
+      app: proxy
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: proxy
+    spec:
+      serviceAccountName: tier-app-sa
+      containers:
+      - name: proxy
+        image: 3booda24/nginx-proxy-go:latest
+        ports:
+        - containerPort: 443
