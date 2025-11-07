@@ -171,7 +171,7 @@ For additional assistance, check:
 
 ---
 
-**Last Updated:** 2024-12-19  
+**Last Updated:** 2025-11-07 
 **Namespace:** `tier-app`  
 **Environment:** OpenShift
 ```
